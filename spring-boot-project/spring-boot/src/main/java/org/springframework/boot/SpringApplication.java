@@ -288,11 +288,15 @@ public class SpringApplication {
 		this.resourceLoader = resourceLoader;
 		Assert.notNull(primarySources, "PrimarySources must not be null");
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+		// 推断应用类型：Web应用、非Web应用、Reactiv
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
 		this.bootstrapRegistryInitializers = new ArrayList<>(
 				getSpringFactoriesInstances(BootstrapRegistryInitializer.class));
+		// 设置应用上下文初始化器
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+		// 设置应用监听器
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		// 推断应用main函数入口
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
@@ -322,22 +326,31 @@ public class SpringApplication {
 		DefaultBootstrapContext bootstrapContext = createBootstrapContext();
 		ConfigurableApplicationContext context = null;
 		configureHeadlessProperty();
+		// 创建事件发布器
 		SpringApplicationRunListeners listeners = getRunListeners(args);
+		// 发布开始事件
 		listeners.starting(bootstrapContext, this.mainApplicationClass);
 		try {
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+			// 准备环境
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, bootstrapContext, applicationArguments);
+			// 打印banner
 			Banner printedBanner = printBanner(environment);
+			// 创建应用上下文
 			context = createApplicationContext();
 			context.setApplicationStartup(this.applicationStartup);
+			// 准备应用上下文
 			prepareContext(bootstrapContext, context, environment, listeners, applicationArguments, printedBanner);
+			// 刷新上下文
 			refreshContext(context);
 			afterRefresh(context, applicationArguments);
+			// 发布开始完成事件
 			startup.started();
 			if (this.logStartupInfo) {
 				new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), startup);
 			}
 			listeners.started(context, startup.timeTakenToStarted());
+			// 回调ApplicationRunner、CommandLineRunner
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
